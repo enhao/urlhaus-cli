@@ -21,14 +21,33 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"strings"
+	"text/template"
 
 	"github.com/spf13/cobra"
 )
+
+const tagTempl = `{{if eq .query_status "ok"}}Malware Tag Infomation:
+  First seen: {{.firstseen}}
+  {{if .lastseen}}Last seen:  {{.lastseen}}{{end}}
+  Number of URLs observation: {{.url_count}}
+
+  List of malware URLs associated with this tag (max 1000):{{range .urls}}
+    * {{.url}}
+      Status:       {{.url_status}}
+      URLhaus:
+        ID:         {{.url_id}}
+        Reference:  {{.urlhaus_reference}}
+        Date added: {{.dateadded}}
+        Reporter:   {{.reporter}}
+{{end}}{{else}}{{.query_status}}{{end}}
+`
 
 // tagCmd represents the tag command
 var tagCmd = &cobra.Command{
@@ -41,12 +60,32 @@ var tagCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal(err)
 		}
-		content, err := ioutil.ReadAll(resp.Body)
-		resp.Body.Close()
+		defer resp.Body.Close()
+
+		b, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Printf("%s", content)
+
+		if len(b) == 0 {
+			return
+		}
+
+		if rawOutput {
+			fmt.Printf("%s", b)
+			return
+		}
+
+		t := template.Must(template.New("").Parse(tagTempl))
+
+		m := map[string]interface{}{}
+		if err := json.Unmarshal([]byte(b), &m); err != nil {
+			log.Fatal(err)
+		}
+
+		if err := t.Execute(os.Stdout, m); err != nil {
+			log.Fatal(err)
+		}
 	},
 }
 
