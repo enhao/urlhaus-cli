@@ -27,6 +27,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var rawOutput bool
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "urlhaus-cli",
@@ -44,4 +46,8 @@ func Execute() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+}
+
+func init() {
+	rootCmd.PersistentFlags().BoolVarP(&rawOutput, "raw", "r", false, "raw output")
 }
