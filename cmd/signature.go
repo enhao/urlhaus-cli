@@ -21,14 +21,42 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"strings"
+	"text/template"
 
 	"github.com/spf13/cobra"
 )
+
+const signatureTempl = `{{if eq .query_status "ok"}}Malware Signature Infomation:
+  First seen: {{.firstseen}}
+  {{if .lastseen}}Last seen:  {{.lastseen}}{{end}}
+  Number of URLs observation:     {{.url_count}}
+  Number of Payloads observation: {{.payload_count}}
+
+  List of malware URLs associated with this signature (max 1000):{{range .urls}}
+    * {{.url}}
+      Status:     {{.url_status}}
+      First seen: {{.firstseen}}
+      {{if .lastseen}}Last seen:  {{.lastseen}}{{end}}
+      Type:       {{.file_type}}
+      Size:       {{.file_size}}
+      Hash:
+        MD5:      {{.md5_hash}}
+        SHA256:   {{.sha256_hash}}
+      URLhaus:
+        ID:         {{.url_id}}
+        Reference:  {{.urlhaus_reference}}
+        {{if .virustotal}}VirusTotal: {{.virustotal.percent}}% ({{.virustotal.result}})
+          Link:     {{.virustotal.link}}{{end}}
+		Sample download: {{.urlhaus_download}}
+{{end}}{{else}}{{.query_status}}{{end}}
+`
 
 // signatureCmd represents the signature command
 var signatureCmd = &cobra.Command{
@@ -45,12 +73,32 @@ reporter of the malware URL can not influence.`,
 		if err != nil {
 			log.Fatal(err)
 		}
-		content, err := ioutil.ReadAll(resp.Body)
-		resp.Body.Close()
+		defer resp.Body.Close()
+
+		b, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Printf("%s", content)
+
+		if len(b) == 0 {
+			return
+		}
+
+		if rawOutput {
+			fmt.Printf("%s", b)
+			return
+		}
+
+		t := template.Must(template.New("").Parse(signatureTempl))
+
+		m := map[string]interface{}{}
+		if err := json.Unmarshal([]byte(b), &m); err != nil {
+			log.Fatal(err)
+		}
+
+		if err := t.Execute(os.Stdout, m); err != nil {
+			log.Fatal(err)
+		}
 	},
 }
 
