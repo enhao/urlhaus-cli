@@ -21,14 +21,33 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"strings"
+	"text/template"
 
 	"github.com/spf13/cobra"
 )
+
+const hostTempl = `{{if eq .query_status "ok"}}URLhaus Infomation:
+  Reference: {{.urlhaus_reference}}
+  Blacklist:
+    * SURBL:        {{.blacklists.surbl}}
+    * Spamhaus DBL: {{.blacklists.spamhaus_dbl}}
+
+  First seen: {{.firstseen}}
+  Number of URLs observation: {{.url_count}}
+  List of URLs observed on this host (max 100):{{range .urls}}
+    * Reference:  {{.urlhaus_reference}}
+      Date added: {{.date_added}}
+      Reporter:   {{.reporter}}
+      Tags:       {{range $index, $element := .tags}}{{if $index}},{{end}}{{$element}}{{end}}
+{{end}}{{else}}{{.query_status}}{{end}}
+`
 
 // hostCmd represents the host command
 var hostCmd = &cobra.Command{
@@ -41,12 +60,32 @@ var hostCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal(err)
 		}
-		content, err := ioutil.ReadAll(resp.Body)
-		resp.Body.Close()
+		defer resp.Body.Close()
+
+		b, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Printf("%s", content)
+
+		if len(b) == 0 {
+			return
+		}
+
+		if rawOutput {
+			fmt.Printf("%s", b)
+			return
+		}
+
+		t := template.Must(template.New("").Parse(hostTempl))
+
+		m := map[string]interface{}{}
+		if err := json.Unmarshal([]byte(b), &m); err != nil {
+			log.Fatal(err)
+		}
+
+		if err := t.Execute(os.Stdout, m); err != nil {
+			log.Fatal(err)
+		}
 	},
 }
 
