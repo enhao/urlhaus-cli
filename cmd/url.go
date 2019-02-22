@@ -21,14 +21,44 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"strings"
+	"text/template"
 
 	"github.com/spf13/cobra"
 )
+
+const urlTempl = `{{if eq .query_status "ok"}}URLhaus Infomation:
+  ID:         {{.id}}
+  Reference:  {{.urlhaus_reference}}
+  Date added: {{.date_added}}
+  Reporter:   {{.reporter}}
+  Tags:       {{range $index, $element := .tags}}{{if $index}},{{end}}{{$element}}{{end}}
+
+Malware URL Infomation:
+  Host:             {{.host}}
+  Status:           {{.url_status}}
+  Blacklist:
+    * GSB:          {{.blacklists.gsb}}
+    * SURBL:        {{.blacklists.surbl}}
+    * Spamhaus DBL: {{.blacklists.spamhaus_dbl}}
+
+  Payload:{{range .payloads}}
+    * {{.filename}}
+      Download:   {{.urlhaus_download}}
+      Signature:  {{.signature}}
+      Hash:
+        - MD5:    {{.response_md5}}
+        - SHA256: {{.response_sha256}}
+      {{if .virustotal}}VirusTotal: {{.virustotal.percent}}% ({{.virustotal.result}})
+        Link:     {{.virustotal.link}}{{end}}
+{{end}}{{else}}{{.query_status}}{{end}}
+`
 
 // urlCmd represents the url command
 var urlCmd = &cobra.Command{
@@ -41,12 +71,32 @@ var urlCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal(err)
 		}
-		content, err := ioutil.ReadAll(resp.Body)
-		resp.Body.Close()
+		defer resp.Body.Close()
+
+		b, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Printf("%s", content)
+
+		if len(b) == 0 {
+			return
+		}
+
+		if rawOutput {
+			fmt.Printf("%s", b)
+			return
+		}
+
+		t := template.Must(template.New("").Parse(urlTempl))
+
+		m := map[string]interface{}{}
+		if err := json.Unmarshal([]byte(b), &m); err != nil {
+			log.Fatal(err)
+		}
+
+		if err := t.Execute(os.Stdout, m); err != nil {
+			log.Fatal(err)
+		}
 	},
 }
 
