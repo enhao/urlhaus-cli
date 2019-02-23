@@ -1,6 +1,6 @@
 
-# Created by https://www.gitignore.io/api/vscode,linux,windows,go,visualstudiocod
-# Edit at https://www.gitignore.io/?templates=vscode,linux,windows,go,visualstudiocod
+# Created by https://www.gitignore.io/api/macos,linux,windows,go,visualstudiocode,vim
+# Edit at https://www.gitignore.io/?templates=macos,linux,windows,go,visualstudiocode,vim
 
 ### Go ###
 # Binaries for programs and plugins
@@ -35,9 +35,62 @@
 # .nfs files are created when an open file is removed but is still being accessed
 .nfs*
 
-#!! ERROR: visualstudiocod is undefined. Use list command to see defined gitignore types !!#
+### macOS ###
+# General
+.DS_Store
+.AppleDouble
+.LSOverride
 
-#!! ERROR: vscode is undefined. Use list command to see defined gitignore types !!#
+# Icon must end with two \r
+Icon
+
+# Thumbnails
+._*
+
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+### Vim ###
+# Swap
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+
+# Session
+Session.vim
+
+# Temporary
+.netrwhist
+# Auto-generated tag files
+tags
+# Persistent undo
+[._]*.un~
+
+### VisualStudioCode ###
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+### VisualStudioCode Patch ###
+# Ignore all local history of files
+.history
 
 ### Windows ###
 # Windows thumbnail cache files
@@ -64,4 +117,4 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
-# End of https://www.gitignore.io/api/vscode,linux,windows,go,visualstudiocod
+# End of https://www.gitignore.io/api/macos,linux,windows,go,visualstudiocode,vim
